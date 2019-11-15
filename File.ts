@@ -122,17 +122,41 @@ export class File {
     }
 
     private _CopyRetainDir(baseDir: File, file: File) {
-        const dir = File.CreateFromArray([this.path, baseDir.ToRelativePath(file.dir).replace(/\//g, File.sep)]);
-        if (!dir.IsDir()) {
-            this.CreateDir(true);
+
+        const relativePath = baseDir.ToRelativePath(file.dir);
+
+        if (relativePath) {
+
+            const dir = File.CreateFromArray([this.path, relativePath.replace(/\//g, File.sep)]);
+            if (!dir.IsDir()) {
+                this.CreateDir(true);
+            }
+            fs.copyFileSync(file.path, dir.path + File.sep + file.name);
         }
-        fs.copyFileSync(file.path, dir.path + File.sep + file.name);
     }
 
     // example: this.path: 'd:\app\abc', absPath: 'd:\app\abc\def\a.c', result: './def/a.c'
-    ToRelativePath(absPath: string): string {
-        const reg = new RegExp('^' + File.ToUnixPath(this.path), 'i');
-        return File.DelRepeatedPath('.' + File.ToUnixPath(absPath).replace(reg, ''));
+    ToRelativePath(absPath: string): string | undefined {
+
+        const pathList = File.ToUnixPath(this.path).split('/');
+        const abspathList = File.ToUnixPath(absPath).split('/');
+
+        if (pathList.length > abspathList.length) {
+            return undefined;
+        }
+
+        let i = 0;
+        for (i = 0; i < pathList.length; i++) {
+            if (pathList[i] !== abspathList[i]) {
+                break;
+            }
+        }
+
+        if (i !== pathList.length) {
+            return undefined;
+        }
+
+        return './' + abspathList.slice(i).join('/');
     }
 
     //----------------------------------------------------
