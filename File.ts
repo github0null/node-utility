@@ -26,11 +26,22 @@ export class File {
     }
 
     static ToUnixPath(path: string): string {
-        return path.replace(/\\+/g, '/');
+        return this.DelRepeatedPath(path.replace(/\\+/g, '/'));
+    }
+
+    static ToLocalPath(path: string): string {
+
+        const res = File.ToUnixPath(path);
+
+        if (File.sep === '\\') {
+            return res.replace(/\//g, File.sep);
+        }
+        
+        return res;
     }
 
     // ./././aaaa/././././bbbb => ./aaaa/./bbbb
-    static DelRepeatedPath(path: string) {
+    private static DelRepeatedPath(path: string) {
         return path.replace(/(?:\.\/){2,}/g, './');
     }
 
