@@ -10,6 +10,8 @@ export interface Executable {
 
     Kill(): void;
 
+    IsExit(): boolean;
+
     on(event: 'launch', listener: () => void): this;
 
     on(event: 'close', listener: (exitInfo: ExitInfo) => void): this;
@@ -29,23 +31,32 @@ export interface ExitInfo {
 export abstract class Process implements Executable {
 
     static killSignal = 'SIGKILL';
-    
+
     protected readonly codeType = 'utf8';
 
     protected _event: events.EventEmitter;
     protected proc: process.ChildProcess | undefined;
     protected launchTimeout: number;
 
+    private _exited: boolean;
+
     constructor(timeout?: number) {
         this.launchTimeout = timeout ? timeout : 10;
         this._event = new events.EventEmitter();
+        this._exited = true;
     }
 
     protected abstract Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess;
 
     Run(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): void {
 
+        if (!this._exited) {
+            throw Error('process has not exited !');
+        }
+
         this.proc = this.Execute(exePath, args, options);
+
+        this._exited = false;
 
         if (this.proc.stdout) {
             this.proc.stdout.setEncoding(this.codeType);
@@ -72,6 +83,7 @@ export abstract class Process implements Executable {
                 code: code,
                 signal: signal
             });
+            this._exited = true;
         });
 
         setTimeout((proc: process.ChildProcess) => {
@@ -95,6 +107,10 @@ export abstract class Process implements Executable {
                 resolve();
             }
         });
+    }
+
+    IsExit(): boolean {
+        return this._exited;
     }
 
     on(event: "launch", listener: () => void): this;
