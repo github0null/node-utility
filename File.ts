@@ -36,7 +36,7 @@ export class File {
         if (File.sep === '\\') {
             return res.replace(/\//g, File.sep);
         }
-        
+
         return res;
     }
 
@@ -149,25 +149,18 @@ export class File {
     // example: this.path: 'd:\app\abc', absPath: 'd:\app\abc\def\a.c', result: './def/a.c'
     ToRelativePath(absPath: string): string | undefined {
 
-        const pathList = File.ToUnixPath(this.path).split('/');
-        const abspathList = File.ToUnixPath(absPath).split('/');
+        const path = File.ToUnixPath(this.path);
+        const abspath = File.ToUnixPath(absPath);
 
-        if (pathList.length > abspathList.length) {
+        if (path.length >= abspath.length) {
             return undefined;
         }
 
-        let i = 0;
-        for (i = 0; i < pathList.length; i++) {
-            if (pathList[i] !== abspathList[i]) {
-                break;
-            }
+        if (absPath.startsWith(path)) {
+            return '.' + absPath.substr(path.length);
         }
 
-        if (i !== pathList.length) {
-            return undefined;
-        }
-
-        return './' + abspathList.slice(i).join('/');
+        return undefined;
     }
 
     //----------------------------------------------------
