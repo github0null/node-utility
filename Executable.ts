@@ -41,7 +41,7 @@ export abstract class Process implements Executable {
     private _exited: boolean;
 
     constructor(timeout?: number) {
-        this.launchTimeout = timeout ? timeout : 10;
+        this.launchTimeout = timeout ? timeout : 0;
         this._event = new events.EventEmitter();
         this._exited = true;
     }

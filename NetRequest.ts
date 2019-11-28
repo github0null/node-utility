@@ -5,7 +5,7 @@ export interface RequestOption<T> {
     host: string;
     port: number;
     path?: string;
-    timeOut?: number;
+    timeout?: number;
     content?: T;
 }
 
@@ -31,101 +31,108 @@ export class NetRequest {
         return this;
     }
 
-    Request<T>(option: RequestOption<T>): Promise<NetResponse<T>> {
+    Request<T, ResponseType>(option: RequestOption<T>): Promise<NetResponse<ResponseType>> {
 
         return new Promise((resolve) => {
 
             let resolved = false;
             let _method = option.content ? 'POST' : 'GET';
 
-            let request = http.request({
-                protocol: 'http:',
-                host: option.host,
-                port: option.port,
-                path: option.path,
-                method: _method,
-                timeout: option.timeOut
-            }, (res) => {
+            try {
 
-                let data: string = '';
+                let request = http.request({
+                    protocol: 'http:',
+                    host: option.host,
+                    port: option.port,
+                    path: option.path,
+                    method: _method,
+                    timeout: option.timeout
+                }, (res) => {
 
-                res.setEncoding('utf8');
-                res.on('data', (buf) => {
-                    data += buf;
+                    let data: string = '';
+
+                    res.setEncoding('utf8');
+                    res.on('data', (buf) => {
+                        data += buf;
+                    });
+
+                    res.on('error', (err) => {
+                        this._event.emit('error', err);
+                    });
+
+                    res.on('close', () => {
+
+                        if (!resolved) {
+
+                            resolved = true;
+
+                            if (res.statusCode && res.statusCode < 400) {
+
+                                let content: ResponseType | undefined;
+
+                                if (res.statusCode === 302 || res.statusCode === 301) {
+
+                                    resolve({
+                                        success: false,
+                                        statusCode: res.statusCode,
+                                        location: res.headers.location,
+                                        msg: res.statusMessage
+                                    });
+                                } else {
+
+                                    try {
+                                        content = JSON.parse(data);
+                                        resolve({
+                                            success: true,
+                                            statusCode: res.statusCode,
+                                            content: content,
+                                            msg: res.statusMessage
+                                        });
+                                    } catch (err) {
+                                        resolve({
+                                            success: false,
+                                            statusCode: res.statusCode,
+                                            msg: res.statusMessage
+                                        });
+                                    }
+                                }
+                            } else {
+                                resolve({
+                                    success: false,
+                                    statusCode: res.statusCode,
+                                    msg: res.statusMessage
+                                });
+                            }
+                        }
+                    });
                 });
 
-                res.on('error', (err) => {
-                    this._event.emit('error', err);
-                });
-
-                res.on('close', () => {
+                request.on('error', (err) => {
 
                     if (!resolved) {
 
                         resolved = true;
 
-                        if (res.statusCode && res.statusCode < 400) {
-
-                            let content: T | undefined;
-
-                            if (res.statusCode === 302 || res.statusCode === 301) {
-
-                                resolve({
-                                    success: false,
-                                    statusCode: res.statusCode,
-                                    location: res.headers.location,
-                                    msg: res.statusMessage
-                                });
-                            } else {
-
-                                try {
-                                    content = JSON.parse(data);
-                                    resolve({
-                                        success: true,
-                                        statusCode: res.statusCode,
-                                        content: content,
-                                        msg: res.statusMessage
-                                    });
-                                } catch (err) {
-                                    resolve({
-                                        success: false,
-                                        statusCode: res.statusCode,
-                                        msg: res.statusMessage
-                                    });
-                                }
-                            }
-                        } else {
-                            resolve({
-                                success: false,
-                                statusCode: res.statusCode,
-                                msg: res.statusMessage
-                            });
-                        }
+                        resolve({
+                            success: false
+                        });
                     }
+
+                    this._event.emit('error', err);
                 });
-            });
 
-            request.on('error', (err) => {
+                if (_method === 'POST') {
 
-                if (!resolved) {
+                    request.end(JSON.stringify(option.content));
 
-                    resolved = true;
+                } else {
 
-                    resolve({
-                        success: false
-                    });
+                    request.end();
                 }
 
-                this._event.emit('error', err);
-            });
+            } catch (error) {
 
-            if (_method === 'POST') {
-
-                request.end(JSON.stringify(option.content));
-
-            } else {
-
-                request.end();
+                this._event.emit('error', error);
             }
         });
     }
