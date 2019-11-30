@@ -26,7 +26,7 @@ export class File {
     }
 
     static ToUnixPath(path: string): string {
-        return this.DelRepeatedPath(path.replace(/\\+/g, '/'));
+        return this.DelRepeatedPath(path.replace(/\\{1,}/g, '/'));
     }
 
     static ToLocalPath(path: string): string {
@@ -40,9 +40,11 @@ export class File {
         return res;
     }
 
-    // ./././aaaa/././././bbbb => ./aaaa/./bbbb
+    // ./././aaaa/././././bbbb => ./aaaa/bbbb
     private static DelRepeatedPath(path: string) {
-        return path.replace(/(?:\.\/){2,}/g, './');
+        return path.replace(/^\.\//g, '#')
+            .replace(/(?:\.\/){1,}/g, '')
+            .replace(/^#/, './');
     }
 
     private static _match(str: string, isInverter: boolean, regList: RegExp[]): boolean {
@@ -156,8 +158,8 @@ export class File {
             return undefined;
         }
 
-        if (abspath.startsWith(path)) {
-            return '.' + abspath.substr(path.length);
+        if (abspath.startsWith(root)) {
+            return '.' + abspath.substr(root.length);
         }
 
         return undefined;
