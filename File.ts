@@ -147,17 +147,17 @@ export class File {
     }
 
     // example: this.path: 'd:\app\abc', absPath: 'd:\app\abc\def\a.c', result: './def/a.c'
-    ToRelativePath(absPath: string): string | undefined {
+    ToRelativePath(path: string): string | undefined {
 
-        const path = File.ToUnixPath(this.path);
-        const abspath = File.ToUnixPath(absPath);
+        const root = File.ToUnixPath(this.path);
+        const abspath = File.ToUnixPath(path);
 
-        if (path.length >= abspath.length) {
+        if (root.length >= abspath.length) {
             return undefined;
         }
 
-        if (absPath.startsWith(path)) {
-            return '.' + absPath.substr(path.length);
+        if (abspath.startsWith(path)) {
+            return '.' + abspath.substr(path.length);
         }
 
         return undefined;
