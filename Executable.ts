@@ -30,7 +30,7 @@ export interface ExitInfo {
 
 export abstract class Process implements Executable {
 
-    static killSignal = 'SIGKILL';
+    static killSignal: NodeJS.Signals = 'SIGKILL';
 
     protected readonly codeType = 'utf8';
 
