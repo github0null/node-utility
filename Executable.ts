@@ -1,6 +1,7 @@
 import * as process from 'child_process';
 import * as events from 'events';
 import * as ReadLine from 'readline';
+import { EOL } from 'os';
 
 export type ExecutableOption = { encoding?: string | null } & process.ExecFileOptions | process.ForkOptions;
 
@@ -51,7 +52,8 @@ export abstract class Process implements Executable {
     Run(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): void {
 
         if (!this._exited) {
-            throw Error('process has not exited !');
+            this._event.emit('error', new Error('process has not exited !'));
+            return;
         }
 
         this.proc = this.Execute(exePath, args, options);
@@ -91,6 +93,18 @@ export abstract class Process implements Executable {
                 this._event.emit('launch');
             }
         }, this.launchTimeout, this.proc);
+    }
+
+    SendText(str: string): boolean {
+
+        if(this.proc && this.proc.stdin) {
+
+            this.proc.stdin.write(str + EOL);
+
+            return true;
+        }
+
+        return false;
     }
 
     async Kill(): Promise<void> {
@@ -137,5 +151,4 @@ export class ExeModule extends Process {
     protected Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
         return process.fork(exePath, args, options);
     }
-
 }
