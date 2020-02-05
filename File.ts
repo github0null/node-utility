@@ -148,10 +148,12 @@ export class File {
         }
     }
 
-    // example: this.path: 'd:\app\abc', absPath: 'd:\app\abc\def\a.c', result: './def/a.c'
+    /**
+     * example: this.path: 'd:\app\abc\.', absPath: 'd:\app\abc\.\def\a.c', result: './def/a.c'
+    */
     ToRelativePath(path: string): string | undefined {
 
-        const root = File.ToUnixPath(this.path);
+        const root = File.ToUnixPath(this.path).replace(/\/\s*$/, '');
         const abspath = File.ToUnixPath(path);
 
         if (root.length >= abspath.length) {
@@ -274,9 +276,9 @@ export class File {
 
     //-------------------------------------------------
 
-    Read(): string {
+    Read(encoding?: string): string {
         return fs.readFileSync(this.path, {
-            encoding: 'utf8'
+            encoding: encoding || 'utf8'
         });
     }
 
