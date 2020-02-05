@@ -143,7 +143,6 @@ export class ExeFile extends Process {
     protected Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
         return process.execFile(exePath, args, options);
     }
-
 }
 
 export class ExeModule extends Process {
