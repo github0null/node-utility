@@ -1,5 +1,6 @@
 import * as Path from 'path';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 
 export class File {
 
@@ -302,6 +303,16 @@ export class File {
             return fs.lstatSync(this.path).isDirectory();
         }
         return false;
+    }
+
+    getHash(hashName?: string): string {
+        const hash = crypto.createHash(hashName || 'md5');
+        hash.update(fs.readFileSync(this.path));
+        return hash.digest('hex');
+    }
+
+    getSize(): number {
+        return fs.statSync(this.path).size;
     }
 
     ToUri(): string {

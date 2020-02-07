@@ -1,11 +1,11 @@
 import * as http from 'http';
 import * as events from 'events';
+import * as https from 'https';
+import * as stream from 'stream';
 
-export interface RequestOption<T> {
-    host: string;
-    port: number;
-    path?: string;
-    timeout?: number;
+export type HttpRequestType = 'http' | 'https';
+
+export interface RequestOption<T> extends http.RequestOptions {
     content?: T;
 }
 
@@ -31,30 +31,23 @@ export class NetRequest {
         return this;
     }
 
-    Request<T, ResponseType>(option: RequestOption<T>): Promise<NetResponse<ResponseType>> {
+    Request<T, ResponseType>(option: RequestOption<T> | string, type?: HttpRequestType,
+        report?: (receivedSize: number) => void): Promise<NetResponse<ResponseType>> {
 
         return new Promise((resolve) => {
 
             let resolved = false;
-            let _method = option.content ? 'POST' : 'GET';
+
+            if (typeof option !== 'string' && option.content) {
+                option.method = 'GET';
+            }
 
             try {
-
-                let request = http.request({
-                    protocol: 'http:',
-                    host: option.host,
-                    port: option.port,
-                    path: option.path,
-                    method: _method,
-                    timeout: option.timeout
-                }, (res) => {
+                const callbk: (res: http.IncomingMessage) => void = (res) => {
 
                     let data: string = '';
 
                     res.setEncoding('utf8');
-                    res.on('data', (buf) => {
-                        data += buf;
-                    });
 
                     res.on('error', (err) => {
                         this._event.emit('error', err);
@@ -105,14 +98,27 @@ export class NetRequest {
                             }
                         }
                     });
-                });
+
+                    res.on('data', (buf) => {
+                        data += buf;
+                        if (report) {
+                            report(data.length);
+                        }
+                    });
+                };
+
+                let request: http.ClientRequest;
+
+                if (type !== 'https') {
+                    request = http.request(option, callbk);
+                } else {
+                    request = https.request(option, callbk);
+                }
 
                 request.on('error', (err) => {
 
                     if (!resolved) {
-
                         resolved = true;
-
                         resolve({
                             success: false
                         });
@@ -121,18 +127,80 @@ export class NetRequest {
                     this._event.emit('error', err);
                 });
 
-                if (_method === 'POST') {
-
+                if (typeof option !== 'string' && option.content) {
                     request.end(JSON.stringify(option.content));
-
                 } else {
+                    request.end();
+                }
+            } catch (error) {
 
+                if (!resolved) {
+                    resolved = true;
+                    resolve({
+                        success: false
+                    });
+                }
+
+                this._event.emit('error', error);
+            }
+        });
+    }
+
+    RequestStream<T>(option: RequestOption<T> | string, writableStream: stream.Writable, type?: HttpRequestType, report?: (incrementSize: number) => void): Promise<boolean> {
+
+        return new Promise((resolve) => {
+
+            let request: http.ClientRequest;
+
+            if (typeof option !== 'string' && option.content) {
+                option.method = 'GET';
+            }
+
+            let resolved: boolean = false;
+            const resolveIf = (state: boolean) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(state);
+                }
+            };
+
+            try {
+                if (type !== 'https') {
+                    request = http.request(option);
+                } else {
+                    request = https.request(option);
+                }
+
+                request.on('error', (err) => {
+                    this._event.emit('error', err);
+                    resolveIf(false);
+                });
+
+                if (typeof option !== 'string' && option.content) {
+                    request.end(JSON.stringify(option.content));
+                } else {
                     request.end();
                 }
 
-            } catch (error) {
+                if (report) {
+                    request.connection.on('data', (buf) => {
+                        report(buf.length);
+                    });
+                }
 
+                const ref = request.pipe(writableStream);
+
+                ref.on('error', (err) => {
+                    this._event.emit('error', err);
+                    resolveIf(false);
+                });
+
+                ref.on('close', () => {
+                    resolveIf(true);
+                });
+            } catch (error) {
                 this._event.emit('error', error);
+                resolveIf(false);
             }
         });
     }
