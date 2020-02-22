@@ -1,12 +1,15 @@
 import { File } from "./File";
 import * as fs from 'fs';
+import * as events from "events";
 
 export class FileWatcher {
 
     readonly file: File;
-    private watcher: fs.FSWatcher | undefined;
+    private watcher?: fs.FSWatcher;
+    private selfWatcher?: fs.FSWatcher;
     private isDir: boolean;
     private recursive: boolean;
+    private _event: events.EventEmitter;
 
     OnRename?: (file: File) => void;
     OnChanged?: (file: File) => void;
@@ -15,11 +18,30 @@ export class FileWatcher {
         this.file = _file;
         this.recursive = _recursive;
         this.isDir = this.file.IsDir();
+        this._event = new events.EventEmitter();
+    }
+
+    on(event: 'error', listener: (err: Error) => void): this;
+    on(event: any, listener: (arg?: any) => void): this {
+        this._event.on(event, listener);
+        return this;
     }
 
     Watch(): this {
+
+        if (this.isDir && this.selfWatcher === undefined) {
+            this.selfWatcher = fs.watch(this.file.dir, { recursive: false }, (ev, fname) => {
+                if (fname === this.file.name && this.OnRename) {
+                    this.OnRename(this.file);
+                }
+            });
+            this.selfWatcher.on('error', (err) => {
+                this._event.emit('error', err);
+            });
+        }
+
         if (this.watcher === undefined) {
-            this.watcher = fs.watch(this.file.path, { encoding: 'utf8', recursive: this.recursive }, (event, filename) => {
+            this.watcher = fs.watch(this.file.path, { recursive: this.recursive }, (event, filename) => {
                 switch (event) {
                     case 'rename':
                         if (this.OnRename) {
@@ -34,13 +56,19 @@ export class FileWatcher {
                 }
             });
             this.watcher.on('error', (err) => {
-                throw err;
+                this._event.emit('error', err);
             });
         }
         return this;
     }
 
     Close() {
+
+        if (this.selfWatcher) {
+            this.selfWatcher.close();
+            this.selfWatcher = undefined;
+        }
+
         if (this.watcher) {
             this.watcher.close();
             this.watcher = undefined;

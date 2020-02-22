@@ -1,7 +1,6 @@
 import * as http from 'http';
 import * as events from 'events';
 import * as https from 'https';
-import * as stream from 'stream';
 
 export type HttpRequestType = 'http' | 'https';
 
@@ -25,6 +24,11 @@ export class NetRequest {
         this._event = new events.EventEmitter();
     }
 
+    emit(event: 'abort'): boolean;
+    emit(event: any, arg?: any): boolean {
+        return this._event.emit(event, arg);
+    }
+
     on(event: 'error', listener: (err: Error) => void): this;
     on(event: any, listener: (argc?: any) => void): this {
         this._event.on(event, listener);
@@ -36,76 +40,71 @@ export class NetRequest {
 
         return new Promise((resolve) => {
 
-            let resolved = false;
-
             if (typeof option !== 'string' && option.content) {
                 option.method = 'GET';
             }
 
+            let resolved: boolean = false;
+            const resolveIf = (res?: NetResponse<ResponseType>) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(res);
+                }
+            };
+
+            const callbk: (res: http.IncomingMessage) => void = (res) => {
+
+                let data: string = '';
+                res.setEncoding('utf8');
+
+                this._event.on('abort', () => {
+                    if (!res.destroyed) {
+                        res.destroy();
+                    }
+                });
+
+                res.on('error', (err) => {
+                    this._event.emit('error', err);
+                });
+
+                res.on('close', () => {
+
+                    if (res.statusCode && res.statusCode < 300) {
+
+                        let content: ResponseType | undefined;
+                        try {
+                            content = JSON.parse(data);
+                            resolveIf({
+                                success: true,
+                                statusCode: res.statusCode,
+                                content: content,
+                                msg: res.statusMessage
+                            });
+                        } catch (err) {
+                            resolveIf({
+                                success: false,
+                                statusCode: res.statusCode,
+                                msg: res.statusMessage
+                            });
+                        }
+                    } else {
+                        resolveIf({
+                            success: false,
+                            statusCode: res.statusCode,
+                            msg: res.statusMessage
+                        });
+                    }
+                });
+
+                res.on('data', (buf) => {
+                    data += buf;
+                    if (report) {
+                        report(data.length);
+                    }
+                });
+            };
+
             try {
-                const callbk: (res: http.IncomingMessage) => void = (res) => {
-
-                    let data: string = '';
-
-                    res.setEncoding('utf8');
-
-                    res.on('error', (err) => {
-                        this._event.emit('error', err);
-                    });
-
-                    res.on('close', () => {
-
-                        if (!resolved) {
-
-                            resolved = true;
-
-                            if (res.statusCode && res.statusCode < 400) {
-
-                                let content: ResponseType | undefined;
-
-                                if (res.statusCode === 302 || res.statusCode === 301) {
-
-                                    resolve({
-                                        success: false,
-                                        statusCode: res.statusCode,
-                                        location: res.headers.location,
-                                        msg: res.statusMessage
-                                    });
-                                } else {
-
-                                    try {
-                                        content = JSON.parse(data);
-                                        resolve({
-                                            success: true,
-                                            statusCode: res.statusCode,
-                                            content: content,
-                                            msg: res.statusMessage
-                                        });
-                                    } catch (err) {
-                                        resolve({
-                                            success: false,
-                                            statusCode: res.statusCode,
-                                            msg: res.statusMessage
-                                        });
-                                    }
-                                }
-                            } else {
-                                resolve({
-                                    success: false,
-                                    statusCode: res.statusCode,
-                                    msg: res.statusMessage
-                                });
-                            }
-                        }
-                    });
-
-                    res.on('data', (buf) => {
-                        data += buf;
-                        if (report) {
-                            report(data.length);
-                        }
-                    });
-                };
 
                 let request: http.ClientRequest;
 
@@ -115,15 +114,16 @@ export class NetRequest {
                     request = https.request(option, callbk);
                 }
 
-                request.on('error', (err) => {
-
-                    if (!resolved) {
-                        resolved = true;
-                        resolve({
-                            success: false
-                        });
+                this._event.on('abort', () => {
+                    if (!request.destroyed) {
+                        request.destroy();
                     }
+                });
 
+                request.on('error', (err) => {
+                    resolveIf({
+                        success: false
+                    });
                     this._event.emit('error', err);
                 });
 
@@ -133,47 +133,92 @@ export class NetRequest {
                     request.end();
                 }
             } catch (error) {
-
-                if (!resolved) {
-                    resolved = true;
-                    resolve({
-                        success: false
-                    });
-                }
-
+                resolveIf({
+                    success: false
+                });
                 this._event.emit('error', error);
             }
         });
     }
 
-    RequestStream<T>(option: RequestOption<T> | string, writableStream: stream.Writable, type?: HttpRequestType, report?: (incrementSize: number) => void): Promise<boolean> {
+    RequestBinary<T>(option: RequestOption<T> | string, type?: HttpRequestType, report?: (incrementSize: number) => void): Promise<NetResponse<Buffer>> {
 
         return new Promise((resolve) => {
 
-            let request: http.ClientRequest;
+            let buffer: Buffer = Buffer.from([]);
+            let isAbort = false;
 
             if (typeof option !== 'string' && option.content) {
                 option.method = 'GET';
             }
 
             let resolved: boolean = false;
-            const resolveIf = (state: boolean) => {
+            const resolveIf = (res: NetResponse<Buffer>) => {
                 if (!resolved) {
                     resolved = true;
-                    resolve(state);
+                    resolve(res);
                 }
             };
 
+            const callbk: (res: http.IncomingMessage) => void = (res) => {
+
+                res.on('error', (err) => {
+                    this._event.emit('error', err);
+                });
+
+                this._event.on('abort', () => {
+                    if (!res.destroyed) {
+                        isAbort = true;
+                        res.destroy();
+                    }
+                });
+
+                res.on('close', () => {
+                    if (res.statusCode && res.statusCode < 300 && !isAbort) {
+                        resolveIf({
+                            success: true,
+                            statusCode: res.statusCode,
+                            msg: res.statusMessage,
+                            content: buffer
+                        });
+                    } else {
+                        resolveIf({
+                            success: !isAbort,
+                            statusCode: res.statusCode,
+                            msg: res.statusMessage
+                        });
+                    }
+                });
+
+                res.on('data', (buf: Buffer) => {
+                    buffer = Buffer.concat([buffer, buf], buffer.length + buf.length);
+                    if (report) {
+                        report(buffer.length);
+                    }
+                });
+            };
+
+            let request: http.ClientRequest;
+
             try {
                 if (type !== 'https') {
-                    request = http.request(option);
+                    request = http.request(option, callbk);
                 } else {
-                    request = https.request(option);
+                    request = https.request(option, callbk);
                 }
+
+                this._event.on('abort', () => {
+                    if (!request.destroyed) {
+                        isAbort = true;
+                        request.destroy();
+                    }
+                });
 
                 request.on('error', (err) => {
                     this._event.emit('error', err);
-                    resolveIf(false);
+                    resolveIf({
+                        success: false
+                    });
                 });
 
                 if (typeof option !== 'string' && option.content) {
@@ -182,25 +227,11 @@ export class NetRequest {
                     request.end();
                 }
 
-                if (report) {
-                    request.connection.on('data', (buf) => {
-                        report(buf.length);
-                    });
-                }
-
-                const ref = request.pipe(writableStream);
-
-                ref.on('error', (err) => {
-                    this._event.emit('error', err);
-                    resolveIf(false);
-                });
-
-                ref.on('close', () => {
-                    resolveIf(true);
-                });
             } catch (error) {
                 this._event.emit('error', error);
-                resolveIf(false);
+                resolveIf({
+                    success: false
+                });
             }
         });
     }

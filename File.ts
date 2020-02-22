@@ -278,13 +278,11 @@ export class File {
     //-------------------------------------------------
 
     Read(encoding?: string): string {
-        return fs.readFileSync(this.path, {
-            encoding: encoding || 'utf8'
-        });
+        return fs.readFileSync(this.path, encoding || 'utf8');
     }
 
-    Write(str: string) {
-        fs.writeFileSync(this.path, str);
+    Write(str: string, options?: fs.WriteFileOptions) {
+        fs.writeFileSync(this.path, str, options);
     }
 
     IsExist(): boolean {
