@@ -318,6 +318,6 @@ export class File {
     }
 
     ToNoProtocolUri(): string {
-        return '/' + this.path.replace(new RegExp(Path.sep + Path.sep, 'g'), '/');
+        return '/' + encodeURIComponent(this.path.replace(/\\/g, '/'));
     }
 }
