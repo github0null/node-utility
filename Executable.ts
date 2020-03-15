@@ -3,7 +3,8 @@ import * as events from 'events';
 import * as ReadLine from 'readline';
 import { EOL } from 'os';
 
-export type ExecutableOption = { encoding?: string | null } & process.ExecFileOptions | process.ForkOptions;
+export type ExecutableOption = { encoding?: string | null } & process.ExecFileOptions
+    | process.ForkOptions | process.ExecOptions;
 
 export interface Executable {
 
@@ -47,8 +48,6 @@ export abstract class Process implements Executable {
         this._exited = true;
     }
 
-    protected abstract Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess;
-
     Run(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): void {
 
         if (!this._exited) {
@@ -61,7 +60,7 @@ export abstract class Process implements Executable {
         this._exited = false;
 
         if (this.proc.stdout) {
-            this.proc.stdout.setEncoding(this.codeType);
+            this.proc.stdout.setEncoding((<any>options)?.encoding || this.codeType);
             const stdout = ReadLine.createInterface({ input: this.proc.stdout });
             stdout.on('line', (line) => {
                 this._event.emit('line', line);
@@ -69,7 +68,7 @@ export abstract class Process implements Executable {
         }
 
         if (this.proc.stderr) {
-            this.proc.stderr.setEncoding(this.codeType);
+            this.proc.stderr.setEncoding((<any>options)?.encoding || this.codeType);
             const stderr = ReadLine.createInterface({ input: this.proc.stderr });
             stderr.on('line', (line) => {
                 this._event.emit('errLine', line);
@@ -97,7 +96,7 @@ export abstract class Process implements Executable {
 
     SendText(str: string): boolean {
 
-        if(this.proc && this.proc.stdin) {
+        if (this.proc && this.proc.stdin) {
 
             this.proc.stdin.write(str + EOL);
 
@@ -136,12 +135,24 @@ export abstract class Process implements Executable {
         this._event.on(event, listener);
         return this;
     }
+
+    protected abstract Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess;
 }
 
 export class ExeFile extends Process {
 
     protected Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
         return process.execFile(exePath, args, options);
+    }
+}
+
+export class ExeCmd extends Process {
+
+    protected Execute(command: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
+        if (args) {
+            command += ' ' + args.join(' ');
+        }
+        return process.exec(command, <process.ExecOptions>options);
     }
 }
 

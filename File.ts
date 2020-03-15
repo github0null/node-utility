@@ -119,22 +119,6 @@ export class File {
         }
     }
 
-    private _Copy(file: File) {
-        fs.copyFileSync(file.path, this.path + File.sep + file.name);
-    }
-
-    private ThrowIfNotDir(dir: File) {
-        if (!this.IsDir()) {
-            throw new Error('directory is not exist, [Path] : ' + dir.path);
-        }
-    }
-
-    private ThrowIfNotFile(file: File) {
-        if (!file.IsFile()) {
-            throw new Error('file is not exist, [Path] : ' + file.path);
-        }
-    }
-
     private _CopyRetainDir(baseDir: File, file: File) {
 
         const relativePath = baseDir.ToRelativePath(file.dir);
@@ -241,21 +225,14 @@ export class File {
     }
 
     CopyRetainDir(baseDir: File, file: File) {
-        this.ThrowIfNotDir(baseDir);
-        this.ThrowIfNotFile(file);
-        this.ThrowIfNotDir(this);
         this._CopyRetainDir(baseDir, file);
     }
 
     CopyFile(file: File) {
-        this.ThrowIfNotFile(file);
-        this.ThrowIfNotDir(this);
-        this._Copy(file);
+        fs.copyFileSync(file.path, this.path + File.sep + file.name);
     }
 
     CopyList(dir: File, fileFilter?: RegExp[], dirFilter?: RegExp[]) {
-        this.ThrowIfNotDir(dir);
-        this.ThrowIfNotDir(this);
         let fList = dir.GetList(fileFilter, dirFilter);
         fList.forEach(f => {
             if (f.IsFile()) {
@@ -265,8 +242,6 @@ export class File {
     }
 
     CopyAll(dir: File, fileFilter?: RegExp[], dirFilter?: RegExp[]) {
-        this.ThrowIfNotDir(dir);
-        this.ThrowIfNotDir(this);
         let fList = dir.GetAll(fileFilter, dirFilter);
         fList.forEach(f => {
             if (f.IsFile()) {
