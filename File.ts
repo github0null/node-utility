@@ -155,23 +155,25 @@ export class File {
     //----------------------------------------------------
 
     CreateDir(recursive: boolean = false): void {
-        if (recursive) {
-            let list = this.path.split(Path.sep);
-            let f: File;
-            if (list.length > 0) {
-                let dir: string = list[0];
-                for (let i = 0; i < list.length;) {
-                    f = new File(dir);
-                    if (!f.IsDir()) {
-                        fs.mkdirSync(f.path);
+        if (!this.IsDir()) {
+            if (recursive) {
+                let list = this.path.split(Path.sep);
+                let f: File;
+                if (list.length > 0) {
+                    let dir: string = list[0];
+                    for (let i = 0; i < list.length;) {
+                        f = new File(dir);
+                        if (!f.IsDir()) {
+                            fs.mkdirSync(f.path);
+                        }
+                        dir += ++i < list.length ? (Path.sep + list[i]) : '';
                     }
-                    dir += ++i < list.length ? (Path.sep + list[i]) : '';
+                    return;
                 }
                 return;
             }
-            return;
+            fs.mkdirSync(this.path);
         }
-        fs.mkdirSync(this.path);
     }
 
     GetList(fileFilter?: RegExp[], dirFilter?: RegExp[]): File[] {
