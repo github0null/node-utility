@@ -42,10 +42,21 @@ export class File {
     }
 
     // ./././aaaa/././././bbbb => ./aaaa/bbbb
-    private static DelRepeatedPath(path: string) {
-        return path.replace(/^\.\//g, '#')
-            .replace(/(?:\.\/){1,}/g, '')
-            .replace(/^#/, './');
+    private static DelRepeatedPath(_path: string) {
+
+        let path = _path;
+
+        // delete '..' of path
+        let parts = path.split('/');
+        let index = -1;
+        while ((index = parts.indexOf('..')) > 0) {
+            parts.splice(index - 1, 2);
+        }
+
+        // delete '.' of path
+        path = parts.join('/').replace(/\/\.(?=\/)/g, '');
+
+        return path;
     }
 
     private static _match(str: string, isInverter: boolean, regList: RegExp[]): boolean {
@@ -138,7 +149,7 @@ export class File {
     */
     ToRelativePath(path: string): string | undefined {
 
-        const root = File.ToUnixPath(this.path).replace(/\/\s*$/, '');
+        const root = File.ToUnixPath(this.path);
         const abspath = File.ToUnixPath(path);
 
         if (root.length >= abspath.length) {
@@ -146,7 +157,7 @@ export class File {
         }
 
         if (abspath.startsWith(root)) {
-            return '.' + abspath.substr(root.length);
+            return (root.endsWith('/') ? './' : '.') + abspath.substr(root.length);
         }
 
         return undefined;
