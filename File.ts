@@ -22,7 +22,7 @@ export class File {
         this.dir = Path.dirname(fPath);
     }
 
-    static CreateFromArray(pathArray: string[]): File {
+    static fromArray(pathArray: string[]): File {
         return new File(pathArray.join(File.sep));
     }
 
@@ -136,7 +136,7 @@ export class File {
 
         if (relativePath) {
 
-            const dir = File.CreateFromArray([this.path, relativePath.replace(/\//g, File.sep)]);
+            const dir = File.fromArray([this.path, relativePath.replace(/\//g, File.sep)]);
             if (!dir.IsDir()) {
                 this.CreateDir(true);
             }

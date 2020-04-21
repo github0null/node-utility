@@ -45,12 +45,12 @@ export class FileWatcher {
                 switch (event) {
                     case 'rename':
                         if (this.OnRename) {
-                            this.OnRename(this.isDir ? File.CreateFromArray([this.file.path, filename]) : this.file);
+                            this.OnRename(this.isDir ? File.fromArray([this.file.path, filename]) : this.file);
                         }
                         break;
                     case 'change':
                         if (this.OnChanged) {
-                            this.OnChanged(this.isDir ? File.CreateFromArray([this.file.path, filename]) : this.file);
+                            this.OnChanged(this.isDir ? File.fromArray([this.file.path, filename]) : this.file);
                         }
                         break;
                 }
