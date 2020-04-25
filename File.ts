@@ -30,6 +30,7 @@ export class File {
         return this.DelRepeatedPath(path.replace(/\\{1,}/g, '/'));
     }
 
+    // c:/abcd/../a -> c:\abcd\..\a
     static ToLocalPath(path: string): string {
 
         const res = File.ToUnixPath(path);
