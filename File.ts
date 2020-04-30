@@ -148,7 +148,7 @@ export class File {
     /**
      * example: this.path: 'd:\app\abc\.', absPath: 'd:\app\abc\.\def\a.c', result: './def/a.c'
     */
-    ToRelativePath(path: string): string | undefined {
+    ToRelativePath(path: string, toLocal?: boolean): string | undefined {
 
         const root = File.ToUnixPath(this.path);
         const abspath = File.ToUnixPath(path);
@@ -158,7 +158,11 @@ export class File {
         }
 
         if (abspath.startsWith(root)) {
-            return (root.endsWith('/') ? './' : '.') + abspath.substr(root.length);
+            const res = (root.endsWith('/') ? './' : '.') + abspath.substr(root.length);
+            if (toLocal && File.sep !== '/') {
+                return res.replace(/\//g, File.sep);
+            }
+            return res;
         }
 
         return undefined;
