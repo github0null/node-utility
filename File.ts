@@ -42,6 +42,10 @@ export class File {
         return res;
     }
 
+    static isPath(path: string): boolean {
+        return /^(?:[a-z]\:|\/|\.)/i.test(path);
+    }
+
     // ./././aaaa/././././bbbb => ./aaaa/bbbb
     private static DelRepeatedPath(_path: string) {
 
