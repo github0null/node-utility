@@ -51,8 +51,7 @@ export abstract class Process implements Executable {
     Run(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): void {
 
         if (!this._exited) {
-            this._event.emit('error', new Error('process has not exited !'));
-            return;
+            throw new Error('process has not exited !');
         }
 
         this.proc = this.Execute(exePath, args, options);
