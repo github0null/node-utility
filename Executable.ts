@@ -14,7 +14,7 @@ export interface Executable {
 
     IsExit(): boolean;
 
-    on(event: 'launch', listener: () => void): this;
+    on(event: 'launch', listener: (launchOk?: boolean) => void): this;
 
     on(event: 'close', listener: (exitInfo: ExitInfo) => void): this;
 
@@ -87,9 +87,7 @@ export abstract class Process implements Executable {
         });
 
         setTimeout((proc: process.ChildProcess) => {
-            if (!proc.killed) {
-                this._event.emit('launch');
-            }
+            this._event.emit('launch', !proc.killed);
         }, this.launchTimeout, this.proc);
     }
 
