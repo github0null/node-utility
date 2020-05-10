@@ -30,6 +30,14 @@ export class File {
         return this.DelRepeatedPath(path.replace(/\\{1,}/g, '/'));
     }
 
+    static ToUri(path: string): string {
+        return 'file://' + this.ToNoProtocolUri(path);
+    }
+
+    static ToNoProtocolUri(path: string): string {
+        return '/' + encodeURIComponent(path.replace(/\\/g, '/'));
+    }
+
     // c:/abcd/../a -> c:\abcd\..\a
     static ToLocalPath(path: string): string {
 
