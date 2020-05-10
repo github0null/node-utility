@@ -14,7 +14,13 @@ export interface Executable {
 
     IsExit(): boolean;
 
-    on(event: 'launch', listener: () => void): this;
+    write(chunk: any): Promise<Error | undefined | null>;
+
+    remove(event: any, lisenter: any): void;
+
+    on(event: 'data', listener: (data: string) => void): this;
+
+    on(event: 'launch', listener: (launchOk?: boolean) => void): this;
 
     on(event: 'close', listener: (exitInfo: ExitInfo) => void): this;
 
@@ -48,11 +54,37 @@ export abstract class Process implements Executable {
         this._exited = true;
     }
 
+    on(event: 'launch', listener: () => void): this;
+    on(event: 'close', listener: (exitInfo: ExitInfo) => void): this;
+    on(event: 'error', listener: (err: Error) => void): this;
+    on(event: 'data', listener: (data: string) => void): this;
+    on(event: 'line', listener: (line: string) => void): this;
+    on(event: 'errLine', listener: (line: string) => void): this;
+    on(event: any, listener: (argc?: any) => void) {
+        this._event.on(event, listener);
+        return this;
+    }
+
+    remove(event: any, lisenter: any): void {
+        this._event.removeListener(event, lisenter);
+    }
+
+    write(chunk: any): Promise<Error | undefined | null> {
+        return new Promise((resolve) => {
+            try {
+                (<process.ChildProcess>this.proc).stdin.write(chunk, (err) => {
+                    resolve(err);
+                });
+            } catch (error) {
+                resolve(error);
+            }
+        });
+    }
+
     Run(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): void {
 
         if (!this._exited) {
-            this._event.emit('error', new Error('process has not exited !'));
-            return;
+            throw new Error('process has not exited !');
         }
 
         this.proc = this.Execute(exePath, args, options);
@@ -60,7 +92,13 @@ export abstract class Process implements Executable {
         this._exited = false;
 
         if (this.proc.stdout) {
+            
             this.proc.stdout.setEncoding((<any>options)?.encoding || this.codeType);
+            this.proc.stdout.on('data', (data: string) => {
+                this._event.emit('data', data);
+            });
+
+            // line
             const stdout = ReadLine.createInterface({ input: this.proc.stdout });
             stdout.on('line', (line) => {
                 this._event.emit('line', line);
@@ -68,7 +106,13 @@ export abstract class Process implements Executable {
         }
 
         if (this.proc.stderr) {
+
             this.proc.stderr.setEncoding((<any>options)?.encoding || this.codeType);
+            this.proc.stderr.on('data', (data: string) => {
+                this._event.emit('data', data);
+            });
+
+            // line
             const stderr = ReadLine.createInterface({ input: this.proc.stderr });
             stderr.on('line', (line) => {
                 this._event.emit('errLine', line);
@@ -88,9 +132,7 @@ export abstract class Process implements Executable {
         });
 
         setTimeout((proc: process.ChildProcess) => {
-            if (!proc.killed) {
-                this._event.emit('launch');
-            }
+            this._event.emit('launch', !proc.killed);
         }, this.launchTimeout, this.proc);
     }
 
@@ -124,16 +166,6 @@ export abstract class Process implements Executable {
 
     IsExit(): boolean {
         return this._exited;
-    }
-
-    on(event: "launch", listener: () => void): this;
-    on(event: "close", listener: (exitInfo: ExitInfo) => void): this;
-    on(event: 'error', listener: (err: Error) => void): this;
-    on(event: "line", listener: (line: string) => void): this;
-    on(event: "errLine", listener: (line: string) => void): this;
-    on(event: any, listener: (argc?: any) => void) {
-        this._event.on(event, listener);
-        return this;
     }
 
     protected abstract Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess;
