@@ -27,7 +27,7 @@ export class File {
     }
 
     static ToUnixPath(path: string): string {
-        return this.DelRepeatedPath(path.replace(/\\{1,}/g, '/'));
+        return Path.normalize(path).replace(/\\{1,}/g, '/');
     }
 
     // c:/abcd/../a -> c:\abcd\..\a
@@ -45,7 +45,7 @@ export class File {
     static isPath(path: string): boolean {
         return /^(?:[a-z]\:|\/|\.)/i.test(path);
     }
-
+/* 
     // ./././aaaa/././././bbbb => ./aaaa/bbbb
     private static DelRepeatedPath(_path: string) {
 
@@ -63,7 +63,7 @@ export class File {
 
         return path;
     }
-
+ */
     private static _match(str: string, isInverter: boolean, regList: RegExp[]): boolean {
 
         let isMatch: boolean = false;
