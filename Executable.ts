@@ -72,9 +72,14 @@ export abstract class Process implements Executable {
     write(chunk: any): Promise<Error | undefined | null> {
         return new Promise((resolve) => {
             try {
-                (<process.ChildProcess>this.proc).stdin.write(chunk, (err) => {
-                    resolve(err);
-                });
+                const proc = <process.ChildProcess>this.proc;
+                if (proc.stdin) {
+                    proc.stdin.write(chunk, (err) => {
+                        resolve(err);
+                    });
+                } else {
+                    resolve(new Error('write failed !, \'stdin\' is null'));
+                }
             } catch (error) {
                 resolve(error);
             }
@@ -92,7 +97,7 @@ export abstract class Process implements Executable {
         this._exited = false;
 
         if (this.proc.stdout) {
-            
+
             this.proc.stdout.setEncoding((<any>options)?.encoding || this.codeType);
             this.proc.stdout.on('data', (data: string) => {
                 this._event.emit('data', data);
