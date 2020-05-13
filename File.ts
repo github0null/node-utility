@@ -49,10 +49,6 @@ export class File {
 
         return res;
     }
-
-    static isPath(path: string): boolean {
-        return /^(?:[a-z]\:|\/|\.)/i.test(path);
-    }
 /* 
     // ./././aaaa/././././bbbb => ./aaaa/bbbb
     private static DelRepeatedPath(_path: string) {
@@ -171,7 +167,7 @@ export class File {
 
         if (abspath.startsWith(root)) {
             const res = (root.endsWith('/') ? './' : '.') + abspath.substr(root.length);
-            if (toLocal && File.sep !== '/') {
+            if (toLocal && File.sep === '\\') {
                 return res.replace(/\//g, File.sep);
             }
             return res;
