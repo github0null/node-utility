@@ -49,25 +49,25 @@ export class File {
 
         return res;
     }
-/* 
-    // ./././aaaa/././././bbbb => ./aaaa/bbbb
-    private static DelRepeatedPath(_path: string) {
-
-        let path = _path;
-
-        // delete '..' of path
-        let parts = path.split('/');
-        let index = -1;
-        while ((index = parts.indexOf('..')) > 0) {
-            parts.splice(index - 1, 2);
+    /* 
+        // ./././aaaa/././././bbbb => ./aaaa/bbbb
+        private static DelRepeatedPath(_path: string) {
+    
+            let path = _path;
+    
+            // delete '..' of path
+            let parts = path.split('/');
+            let index = -1;
+            while ((index = parts.indexOf('..')) > 0) {
+                parts.splice(index - 1, 2);
+            }
+    
+            // delete '.' of path
+            path = parts.join('/').replace(/\/\.(?=\/)/g, '');
+    
+            return path;
         }
-
-        // delete '.' of path
-        path = parts.join('/').replace(/\/\.(?=\/)/g, '');
-
-        return path;
-    }
- */
+     */
     private static _match(str: string, isInverter: boolean, regList: RegExp[]): boolean {
 
         let isMatch: boolean = false;
@@ -156,7 +156,7 @@ export class File {
     /**
      * example: this.path: 'd:\app\abc\.', absPath: 'd:\app\abc\.\def\a.c', result: './def/a.c'
     */
-    ToRelativePath(path: string, toLocal?: boolean): string | undefined {
+    ToRelativePath(path: string, toLocal?: boolean, hasPrefix: boolean = true): string | undefined {
 
         const root = File.ToUnixPath(this.path);
         const abspath = File.ToUnixPath(path);
@@ -165,12 +165,10 @@ export class File {
             return undefined;
         }
 
-        if (abspath.startsWith(root)) {
-            const res = (root.endsWith('/') ? './' : '.') + abspath.substr(root.length);
-            if (toLocal && File.sep === '\\') {
-                return res.replace(/\//g, File.sep);
-            }
-            return res;
+        const rePath = Path.relative(root, abspath);
+        if (!Path.isAbsolute(rePath)) {
+            const res = hasPrefix ? (`./${rePath}`) : rePath;
+            return toLocal ? res.replace(/\//g, File.sep) : res;
         }
 
         return undefined;
