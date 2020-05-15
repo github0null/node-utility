@@ -154,24 +154,17 @@ export class File {
     }
 
     /**
-     * example: this.path: 'd:\app\abc\.', absPath: 'd:\app\abc\.\def\a.c', result: './def/a.c'
+     * example: this.path: 'd:\app\abc\.', absPath: 'd:\app\abc\.\def\a.c', result: '.\def\a.c'
     */
-    ToRelativePath(path: string, toLocal?: boolean, hasPrefix: boolean = true): string | undefined {
+    ToRelativePath(abspath: string, hasPrefix: boolean = true): string | undefined {
 
-        const root = File.ToUnixPath(this.path);
-        const abspath = File.ToUnixPath(path);
-
-        if (root.length >= abspath.length) {
+        const rePath = Path.relative(this.path, abspath);
+        
+        if (Path.isAbsolute(rePath)) {
             return undefined;
         }
 
-        const rePath = Path.relative(root, abspath);
-        if (!Path.isAbsolute(rePath)) {
-            const res = hasPrefix ? (`./${rePath}`) : rePath;
-            return toLocal ? res.replace(/\//g, File.sep) : res;
-        }
-
-        return undefined;
+        return hasPrefix ? (`.${File.sep}${rePath}`) : rePath;
     }
 
     //----------------------------------------------------
