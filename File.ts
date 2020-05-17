@@ -158,8 +158,11 @@ export class File {
     */
     ToRelativePath(abspath: string, hasPrefix: boolean = true): string | undefined {
 
+        if (!Path.isAbsolute(abspath)) {
+            return undefined;
+        }
+
         const rePath = Path.relative(this.path, abspath);
-        
         if (Path.isAbsolute(rePath)) {
             return undefined;
         }
