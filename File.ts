@@ -285,17 +285,11 @@ export class File {
     }
 
     IsFile(): boolean {
-        if (fs.existsSync(this.path)) {
-            return fs.lstatSync(this.path).isFile();
-        }
-        return false;
+        return fs.existsSync(this.path) && fs.lstatSync(this.path).isFile();
     }
 
     IsDir(): boolean {
-        if (fs.existsSync(this.path)) {
-            return fs.lstatSync(this.path).isDirectory();
-        }
-        return false;
+        return fs.existsSync(this.path) && fs.lstatSync(this.path).isDirectory();
     }
 
     getHash(hashName?: string): string {
