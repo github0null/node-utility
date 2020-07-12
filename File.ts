@@ -14,12 +14,12 @@ export class File {
     readonly dir: string;           // example 'd:\\dir'
     readonly path: string;          // example 'd:\\dir\\demo.cpp'
 
-    constructor(fPath: string) {
-        this.path = fPath;
-        this.name = Path.basename(fPath);
+    constructor(filePath: string) {
+        this.path = filePath;
+        this.name = Path.basename(this.path);
         this.noSuffixName = this.GetNoSuffixName(this.name);
-        this.suffix = Path.extname(fPath);
-        this.dir = Path.dirname(fPath);
+        this.suffix = Path.extname(this.path);
+        this.dir = Path.dirname(this.path);
     }
 
     static fromArray(pathArray: string[]): File {
