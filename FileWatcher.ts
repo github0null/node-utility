@@ -30,8 +30,8 @@ export class FileWatcher {
     Watch(): this {
 
         if (this.isDir && this.selfWatcher === undefined) {
-            this.selfWatcher = fs.watch(this.file.dir, { recursive: false }, (ev, fname) => {
-                if (fname === this.file.name && this.OnRename) {
+            this.selfWatcher = fs.watch(this.file.dir, (event, fname) => {
+                if (event === 'rename' && fname === this.file.name && this.OnRename) {
                     this.OnRename(this.file);
                 }
             });
