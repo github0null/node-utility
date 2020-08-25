@@ -174,17 +174,15 @@ export class File {
 
     CreateDir(recursive: boolean = false): void {
         if (!this.IsDir()) {
-            if (recursive) {
+            if (recursive) { // create parent folder
                 let list = this.path.split(Path.sep);
-                let f: File;
                 if (list.length > 0) {
-                    let dir: string = list[0];
-                    for (let i = 0; i < list.length;) {
-                        f = new File(dir);
-                        if (!f.IsDir()) {
-                            fs.mkdirSync(f.path);
+                    let _path: string = list[0]; // set root
+                    for (let i = 1; i < list.length; i++) {
+                        _path += (Path.sep + list[i]);
+                        if (!(fs.existsSync(_path) && fs.lstatSync(_path).isDirectory())) {
+                            fs.mkdirSync(_path);
                         }
-                        dir += ++i < list.length ? (Path.sep + list[i]) : '';
                     }
                     return;
                 }
