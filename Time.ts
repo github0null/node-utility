@@ -249,7 +249,7 @@ export class Time {
 
         return {
             year: this.date.getFullYear(),
-            month: this.date.getMonth(),
+            month: this.date.getMonth() + 1,
             date: this.date.getDate(),
 
             hour: this.date.getHours(),
