@@ -259,7 +259,7 @@ export class File {
         });
     }
 
-    CopyAll(dir: File, fileFilter?: RegExp[], dirFilter?: RegExp[]) {
+    CopyAllFile(dir: File, fileFilter?: RegExp[], dirFilter?: RegExp[]) {
         let fList = dir.GetAll(fileFilter, dirFilter);
         fList.forEach(f => {
             if (f.IsFile()) {
