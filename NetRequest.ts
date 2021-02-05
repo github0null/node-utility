@@ -141,11 +141,11 @@ export class NetRequest {
         });
     }
 
-    RequestBinary<T>(option: RequestOption<T> | string, type?: HttpRequestType, report?: (incrementSize: number) => void): Promise<NetResponse<Buffer>> {
+    RequestBinary<T>(option: RequestOption<T> | string, type?: HttpRequestType, report?: (incrementPercent: number) => void): Promise<NetResponse<Buffer>> {
 
         return new Promise((resolve) => {
 
-            let buffer: Buffer = Buffer.from([]);
+            let bufferList: Buffer[] = [];
             let isAbort = false;
 
             if (typeof option !== 'string' && option.content) {
@@ -179,7 +179,7 @@ export class NetRequest {
                             success: true,
                             statusCode: res.statusCode,
                             msg: res.statusMessage,
-                            content: buffer
+                            content: Buffer.concat(bufferList)
                         });
                     } else {
                         resolveIf({
@@ -190,10 +190,12 @@ export class NetRequest {
                     }
                 });
 
+                const totalSize = parseInt(res.headers['content-length']);
+
                 res.on('data', (buf: Buffer) => {
-                    buffer = Buffer.concat([buffer, buf], buffer.length + buf.length);
-                    if (report) {
-                        report(buffer.length);
+                    bufferList.push(buf);
+                    if (report && totalSize) {
+                        report(buf.length / totalSize);
                     }
                 });
             };
