@@ -48,7 +48,7 @@ export class NetRequest {
             const resolveIf = (res?: NetResponse<ResponseType>) => {
                 if (!resolved) {
                     resolved = true;
-                    resolve(res);
+                    resolve(<any>res);
                 }
             };
 
@@ -190,7 +190,7 @@ export class NetRequest {
                     }
                 });
 
-                const totalSize = parseInt(res.headers['content-length']);
+                const totalSize = parseInt(res.headers['content-length'] || '');
 
                 res.on('data', (buf: Buffer) => {
                     bufferList.push(buf);
