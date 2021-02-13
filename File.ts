@@ -167,6 +167,10 @@ export class File {
             return undefined;
         }
 
+        if (rePath === '') {
+            return '.';
+        }
+
         return hasPrefix ? (`.${File.sep}${rePath}`) : rePath;
     }
 
