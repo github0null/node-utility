@@ -184,9 +184,11 @@ export class File {
                     let _path: string = list[0]; // set root
                     for (let i = 1; i < list.length; i++) {
                         _path += (Path.sep + list[i]);
-                        if (!(fs.existsSync(_path) && fs.lstatSync(_path).isDirectory())) {
-                            fs.mkdirSync(_path);
+                        if (fs.existsSync(_path)
+                            && (fs.lstatSync(_path).isDirectory() || fs.lstatSync(_path).isSymbolicLink())) {
+                            continue; // skip existed folder
                         }
+                        fs.mkdirSync(_path);
                     }
                     return;
                 }
