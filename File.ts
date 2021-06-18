@@ -129,6 +129,20 @@ export class File {
         return this._filter(fList, true, fileFilter, dirFilter);
     }
 
+    static IsExist(path: string): boolean {
+        return fs.existsSync(path);
+    }
+
+    static IsFile(path: string): boolean {
+        return fs.existsSync(path) && fs.lstatSync(path).isFile();
+    }
+
+    static IsDir(path: string): boolean {
+        return fs.existsSync(path) && fs.lstatSync(path).isDirectory();
+    }
+
+    //---------
+
     private GetNoSuffixName(name: string): string {
         const nList = this.name.split('.');
         if (nList.length > 1) {
