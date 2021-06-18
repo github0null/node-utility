@@ -67,13 +67,17 @@ export class NetRequest {
                     this._event.emit('error', err);
                 });
 
-                res.on('close', () => {
+                res.on('data', (buf) => {
+                    data += buf;
+                    if (report) {
+                        report(data.length);
+                    }
+                });
 
+                res.on('end', () => {
                     if (res.statusCode && res.statusCode < 300) {
-
-                        let content: ResponseType | undefined;
                         try {
-                            content = JSON.parse(data);
+                            const content = JSON.parse(data);
                             resolveIf({
                                 success: true,
                                 statusCode: res.statusCode,
@@ -95,12 +99,13 @@ export class NetRequest {
                         });
                     }
                 });
-
-                res.on('data', (buf) => {
-                    data += buf;
-                    if (report) {
-                        report(data.length);
-                    }
+                
+                res.on('close', () => {
+                    resolveIf({
+                        success: false,
+                        statusCode: res.statusCode,
+                        msg: 'request closed, but data not end !'
+                    });
                 });
             };
 
@@ -121,10 +126,14 @@ export class NetRequest {
                 });
 
                 request.on('error', (err) => {
-                    resolveIf({
-                        success: false
-                    });
+                    resolveIf({ success: false });
                     this._event.emit('error', err);
+                });
+
+                request.on('timeout', () => {
+                    if (!request.aborted) {
+                        request.abort();
+                    }
                 });
 
                 if (typeof option !== 'string' && option.content) {
@@ -173,7 +182,16 @@ export class NetRequest {
                     }
                 });
 
-                res.on('close', () => {
+                const totalSize = parseInt(res.headers['content-length'] || '');
+
+                res.on('data', (buf: Buffer) => {
+                    bufferList.push(buf);
+                    if (report && totalSize) {
+                        report(buf.length / totalSize);
+                    }
+                });
+                
+                res.on('end', () => {
                     if (res.statusCode && res.statusCode < 300 && !isAbort) {
                         resolveIf({
                             success: true,
@@ -189,14 +207,13 @@ export class NetRequest {
                         });
                     }
                 });
-
-                const totalSize = parseInt(res.headers['content-length'] || '');
-
-                res.on('data', (buf: Buffer) => {
-                    bufferList.push(buf);
-                    if (report && totalSize) {
-                        report(buf.length / totalSize);
-                    }
+                
+                res.on('close', () => {
+                    resolveIf({
+                        success: false,
+                        statusCode: res.statusCode,
+                        msg: 'request closed, but data not end !'
+                    });
                 });
             };
 
@@ -221,6 +238,12 @@ export class NetRequest {
                     resolveIf({
                         success: false
                     });
+                });
+
+                request.on('timeout', () => {
+                    if (!request.aborted) {
+                        request.abort();
+                    }
                 });
 
                 if (typeof option !== 'string' && option.content) {
