@@ -49,7 +49,7 @@ export abstract class Process implements Executable {
     private _exited: boolean;
 
     constructor(timeout?: number) {
-        this.launchTimeout = timeout ? timeout : 0;
+        this.launchTimeout = timeout ? timeout : 10;
         this._event = new events.EventEmitter();
         this._exited = true;
     }
@@ -63,6 +63,10 @@ export abstract class Process implements Executable {
     on(event: any, listener: (argc?: any) => void) {
         this._event.on(event, listener);
         return this;
+    }
+
+    pid(): number | undefined {
+        return this.proc?.pid;
     }
 
     remove(event: any, lisenter: any): void {
@@ -86,13 +90,13 @@ export abstract class Process implements Executable {
         });
     }
 
-    Run(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): void {
+    Run(exe_or_cmd: string, args?: string[] | undefined, options?: ExecutableOption | undefined): void {
 
         if (!this._exited) {
             throw new Error('process has not exited !');
         }
 
-        this.proc = this.Execute(exePath, args, options);
+        this.proc = this.Execute(exe_or_cmd, args, options);
 
         this._exited = false;
 
