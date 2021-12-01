@@ -49,25 +49,18 @@ export class File {
 
         return res;
     }
-    /* 
-        // ./././aaaa/././././bbbb => ./aaaa/bbbb
-        private static DelRepeatedPath(_path: string) {
-    
-            let path = _path;
-    
-            // delete '..' of path
-            let parts = path.split('/');
-            let index = -1;
-            while ((index = parts.indexOf('..')) > 0) {
-                parts.splice(index - 1, 2);
-            }
-    
-            // delete '.' of path
-            path = parts.join('/').replace(/\/\.(?=\/)/g, '');
-    
-            return path;
-        }
-     */
+
+    static isAbsolute(path: string): boolean {
+        return Path.isAbsolute(path)
+            || path.startsWith('$(')
+            || path.startsWith('${');
+    }
+
+    static isEnvPath(path: string): boolean {
+        return path.startsWith('$(')
+            || path.startsWith('${');
+    }
+
     private static _match(str: string, isInverter: boolean, regList: RegExp[]): boolean {
 
         let isMatch: boolean = false;
@@ -172,12 +165,16 @@ export class File {
     */
     ToRelativePath(abspath: string, hasPrefix: boolean = true): string | undefined {
 
-        if (!Path.isAbsolute(abspath)) {
+        if (File.isEnvPath(abspath)) { // env path have no repath
+            return undefined;
+        }
+
+        if (!File.isAbsolute(abspath)) {
             return undefined;
         }
 
         const rePath = Path.relative(this.path, abspath);
-        if (Path.isAbsolute(rePath)) {
+        if (File.isAbsolute(rePath)) {
             return undefined;
         }
 
