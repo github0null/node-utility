@@ -4,7 +4,7 @@ import * as https from 'https';
 
 export type HttpRequestType = 'http' | 'https';
 
-export interface RequestOption<T> extends http.RequestOptions {
+export interface RequestOption<T> extends http.RequestOptions, https.RequestOptions {
     content?: T;
 }
 
