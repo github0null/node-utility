@@ -35,6 +35,9 @@ export class NetRequest {
         return this;
     }
 
+    /**
+     * @note request json object by http/https GET method
+     */
     Request<T, ResponseType>(option: RequestOption<T> | string, type?: HttpRequestType,
         report?: (receivedSize: number) => void): Promise<NetResponse<ResponseType>> {
 
@@ -149,7 +152,119 @@ export class NetRequest {
             }
         });
     }
+    
+    /**
+     * @note request txt content by http/https GET method
+     */
+    RequestTxt<T>(option: RequestOption<T> | string, type?: HttpRequestType,
+        report?: (receivedSize: number) => void): Promise<NetResponse<string>> {
 
+        return new Promise((resolve) => {
+
+            if (typeof option !== 'string' && option.content) {
+                option.method = 'GET';
+            }
+
+            let resolved: boolean = false;
+            const resolveIf = (res?: NetResponse<string>) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(<any>res);
+                }
+            };
+
+            const callbk: (res: http.IncomingMessage) => void = (res) => {
+
+                let data: string = '';
+                res.setEncoding('utf8');
+
+                this._event.on('abort', () => {
+                    if (!res.destroyed) {
+                        res.destroy();
+                    }
+                });
+
+                res.on('error', (err) => {
+                    this._event.emit('error', err);
+                });
+
+                res.on('data', (buf) => {
+                    data += buf;
+                    if (report) {
+                        report(data.length);
+                    }
+                });
+
+                res.on('end', () => {
+                    if (res.statusCode && res.statusCode < 300) {
+                        resolveIf({
+                            success: true,
+                            statusCode: res.statusCode,
+                            content: data,
+                            msg: res.statusMessage
+                        });
+                    } else {
+                        resolveIf({
+                            success: false,
+                            statusCode: res.statusCode,
+                            msg: res.statusMessage
+                        });
+                    }
+                });
+                
+                res.on('close', () => {
+                    resolveIf({
+                        success: false,
+                        statusCode: res.statusCode,
+                        msg: 'request closed, but data not end !'
+                    });
+                });
+            };
+
+            try {
+
+                let request: http.ClientRequest;
+
+                if (type !== 'https') {
+                    request = http.request(option, callbk);
+                } else {
+                    request = https.request(option, callbk);
+                }
+
+                this._event.on('abort', () => {
+                    if (!request.destroyed) {
+                        request.destroy();
+                    }
+                });
+
+                request.on('error', (err) => {
+                    resolveIf({ success: false });
+                    this._event.emit('error', err);
+                });
+
+                request.on('timeout', () => {
+                    if (!request.aborted) {
+                        request.abort();
+                    }
+                });
+
+                if (typeof option !== 'string' && option.content) {
+                    request.end(JSON.stringify(option.content));
+                } else {
+                    request.end();
+                }
+            } catch (error) {
+                resolveIf({
+                    success: false
+                });
+                this._event.emit('error', error);
+            }
+        });
+    }
+
+    /**
+     * @note request binary data by http/https GET method
+     */
     RequestBinary<T>(option: RequestOption<T> | string, type?: HttpRequestType, report?: (incrementPercent: number) => void): Promise<NetResponse<Buffer>> {
 
         return new Promise((resolve) => {
