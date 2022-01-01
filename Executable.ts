@@ -44,12 +44,12 @@ export abstract class Process implements Executable {
 
     protected _event: events.EventEmitter;
     protected proc: process.ChildProcess | undefined;
-    protected launchTimeout: number;
+    protected launchDelay: number;
 
     private _exited: boolean;
 
-    constructor(timeout?: number) {
-        this.launchTimeout = timeout ? timeout : 10;
+    constructor(delay?: number) {
+        this.launchDelay = delay ? delay : 10;
         this._event = new events.EventEmitter();
         this._exited = true;
     }
@@ -142,7 +142,7 @@ export abstract class Process implements Executable {
 
         setTimeout((proc: process.ChildProcess) => {
             this._event.emit('launch', !proc.killed);
-        }, this.launchTimeout, this.proc);
+        }, this.launchDelay, this.proc);
     }
 
     SendText(str: string): boolean {
