@@ -1,6 +1,7 @@
 import * as Path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
+import * as url from 'url';
 
 export class File {
 
@@ -31,11 +32,11 @@ export class File {
     }
 
     static ToUri(path: string): string {
-        return 'file://' + this.ToNoProtocolUri(path);
+        return url.pathToFileURL(path).toString();
     }
 
     static ToNoProtocolUri(path: string): string {
-        return '/' + encodeURIComponent(path.replace(/\\/g, '/'));
+        return url.pathToFileURL(path).pathname;
     }
 
     // c:/abcd/../a -> c:\abcd\..\a
@@ -318,10 +319,10 @@ export class File {
     }
 
     ToUri(): string {
-        return 'file://' + this.ToNoProtocolUri();
+        return url.pathToFileURL(this.path).toString();
     }
 
     ToNoProtocolUri(): string {
-        return '/' + encodeURIComponent(this.path.replace(/\\/g, '/'));
+        return url.pathToFileURL(this.path).hostname;
     }
 }
