@@ -28,7 +28,15 @@ export class File {
     }
 
     static ToUnixPath(path: string): string {
-        return Path.normalize(path).replace(/\\{1,}/g, '/');
+        if (this.sep == '\\') { // in win32 platform
+            return Path.normalize(path).replace(/\\{1,}/g, '/');
+        } else { // in unix platform
+            if (path.includes('\\')) { // it's a win32 path
+                return Path.normalize(path.replace(/\\{1,}/g, '/'));
+            } else {
+                return Path.normalize(path);
+            }
+        }
     }
 
     static ToUri(path: string): string {
