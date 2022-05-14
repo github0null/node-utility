@@ -143,6 +143,16 @@ export class File {
         return fs.existsSync(path) && fs.lstatSync(path).isDirectory();
     }
 
+    static isSubPathOf(root_: string, target_: string): boolean {
+
+        const target = File.ToUnixPath(target_).replace(/\/$/, '');
+        const root = File.ToUnixPath(root_).replace(/\/$/, '');
+
+        if (root == target) return true;
+
+        return target.startsWith(`${root}/`);
+    }
+
     //---------
 
     private GetNoSuffixName(name: string): string {
@@ -168,6 +178,11 @@ export class File {
             fs.copyFileSync(file.path, dir.path + File.sep + file.name);
         }
     }
+
+    isSubPathOf(root_: string): boolean {
+        return File.isSubPathOf(root_, this.path);
+    }
+
 
     ToRelativeLocalPath(abspath: string, hasPrefix: boolean = true): string | undefined {
 
