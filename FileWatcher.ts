@@ -1,6 +1,7 @@
 import { File } from "./File";
 import * as fs from 'fs';
 import * as events from "events";
+import * as os from 'os';
 
 export class FileWatcher {
 
@@ -9,14 +10,16 @@ export class FileWatcher {
     private selfWatcher?: fs.FSWatcher;
     private isDir: boolean;
     private recursive: boolean;
+    private watchSelfDir: boolean;
     private _event: events.EventEmitter;
 
     OnRename?: (file: File) => void;
     OnChanged?: (file: File) => void;
 
-    constructor(_file: File, _recursive: boolean = false) {
+    constructor(_file: File, _recursive: boolean = false, _watchSelfDir: boolean = true) {
         this.file = _file;
         this.recursive = _recursive;
+        this.watchSelfDir = _watchSelfDir;
         this.isDir = this.file.IsDir();
         this._event = new events.EventEmitter();
     }
@@ -29,7 +32,11 @@ export class FileWatcher {
 
     Watch(): this {
 
-        if (this.isDir && this.selfWatcher === undefined) {
+        //
+        // see: http://nodejs.cn/api-v16/fs.html#caveats
+        //
+        if (this.watchSelfDir && this.isDir && os.platform() == 'win32' &&
+            this.selfWatcher === undefined) {
             this.selfWatcher = fs.watch(this.file.dir, (event, fname) => {
                 if (event === 'rename' && fname === this.file.name && this.OnRename) {
                     this.OnRename(this.file);
