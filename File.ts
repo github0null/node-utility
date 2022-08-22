@@ -184,7 +184,7 @@ export class File {
     }
 
 
-    ToRelativeLocalPath(abspath: string, hasPrefix: boolean = true): string | undefined {
+    ToRelativeLocalPath(abspath: string): string | undefined {
 
         if (File.isEnvPath(abspath)) { // env path have no repath
             return undefined;
@@ -203,17 +203,17 @@ export class File {
             return '.';
         }
 
-        return hasPrefix ? (`.${File.sep}${rePath}`) : rePath;
+        return rePath;
     }
 
     /**
      * example: 
      *      this.path:  'd:\app\abc\.', 
      *      absPath:    'd:\app\abc\.\def\a.c', 
-     *      result:     '.\def\a.c'
+     *      result:     'def/a.c'
     */
-    ToRelativePath(abspath: string, hasPrefix: boolean = true): string | undefined {
-        const rePath = this.ToRelativeLocalPath(abspath, hasPrefix);
+    ToRelativePath(abspath: string): string | undefined {
+        const rePath = this.ToRelativeLocalPath(abspath);
         if (rePath) {
             return File.ToUnixPath(rePath);
         }
