@@ -65,9 +65,14 @@ export class File {
             || path.startsWith('${');
     }
 
-    static isEnvPath(path: string): boolean {
+    static isAbsoluteEnvPath(path: string): boolean {
         return path.startsWith('$(')
             || path.startsWith('${');
+    }
+
+    static isEnvPath(path: string): boolean {
+        return path.includes('$(')
+            || path.includes('${');
     }
 
     private static _match(str: string, isInverter: boolean, regList: RegExp[]): boolean {
@@ -186,7 +191,7 @@ export class File {
 
     ToRelativeLocalPath(abspath: string): string | undefined {
 
-        if (File.isEnvPath(abspath)) { // env path have no repath
+        if (File.isAbsoluteEnvPath(abspath)) { // env path have no repath
             return undefined;
         }
 
