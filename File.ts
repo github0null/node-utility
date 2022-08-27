@@ -61,8 +61,7 @@ export class File {
 
     static isAbsolute(path: string): boolean {
         return Path.isAbsolute(path)
-            || path.startsWith('$(')
-            || path.startsWith('${');
+            || File.isAbsoluteEnvPath(path);
     }
 
     static isAbsoluteEnvPath(path: string): boolean {
