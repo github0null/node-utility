@@ -10,7 +10,7 @@ export interface Executable {
 
     Run(exePath: string, args?: string[], options?: ExecutableOption): void;
 
-    Kill(): void;
+    Kill(signal?: NodeJS.Signals | number): void;
 
     IsExit(): boolean;
 
@@ -96,7 +96,7 @@ export abstract class Process implements Executable {
             throw new Error('process has not exited !');
         }
 
-        this.proc = this.Execute(exe_or_cmd, args, options);
+        this.proc = this._execute(exe_or_cmd, args, options);
 
         this._exited = false;
 
@@ -157,16 +157,17 @@ export abstract class Process implements Executable {
         return false;
     }
 
-    async Kill(): Promise<void> {
+    async Kill(signal?: NodeJS.Signals | number): Promise<void> {
+        const sig = signal || Process.killSignal;
         return new Promise((resolve) => {
             if (this.proc && !this.proc.killed) {
                 this._event.once('close', (exitInfo: ExitInfo) => {
                     resolve();
-                    if (exitInfo.signal !== Process.killSignal) {
+                    if (exitInfo.signal !== sig) {
                         this._event.emit('error', new Error('Process killed with error signal !'));
                     }
                 });
-                this.proc.kill(Process.killSignal);
+                this.proc.kill(sig);
             } else {
                 resolve();
             }
@@ -177,19 +178,19 @@ export abstract class Process implements Executable {
         return this._exited;
     }
 
-    protected abstract Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess;
+    protected abstract _execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess;
 }
 
 export class ExeFile extends Process {
 
-    protected Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
+    protected _execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
         return process.execFile(exePath, args, options);
     }
 }
 
 export class ExeCmd extends Process {
 
-    protected Execute(command: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
+    protected _execute(command: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
         if (args) {
             command += ' ' + args.join(' ');
         }
@@ -199,7 +200,7 @@ export class ExeCmd extends Process {
 
 export class ExeModule extends Process {
 
-    protected Execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
+    protected _execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
         return process.fork(exePath, args, options);
     }
 }
