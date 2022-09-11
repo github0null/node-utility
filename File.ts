@@ -27,6 +27,12 @@ export class File {
         return new File(pathArray.join(File.sep));
     }
 
+    /**
+     * convert path string to unix style
+     * 
+     * @param path the path must not contain any 'env variables', like: '${DIR_N}, ${VAR1}', 
+     * because we will use `normalize` function to format path
+     */
     static ToUnixPath(path: string): string {
         if (this.sep == '\\') { // in win32 platform
             return Path.normalize(path).replace(/\\{1,}/g, '/');
