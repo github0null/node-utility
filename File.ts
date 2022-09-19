@@ -38,6 +38,7 @@ export class File {
 
         if (Path.isAbsolute(path)) {
             root = Path.parse(path).root;
+            path = path.substr(root.length);
         }
 
         const p = path.split(/\\|\//)
