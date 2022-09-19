@@ -28,6 +28,47 @@ export class File {
     }
 
     /**
+     * same as 'NodePath.normalize', but we not convert '${VAR}/../A' to 'A'
+    */
+    static normalize(path: string, sep?: string): string {
+
+        const p = path.trim().split(/\\|\//)
+            .map(n => n.trim())
+            .filter(n => n != '' && n != '.');
+
+        let parts: string[] = [];
+
+        p.forEach(n => {
+
+            if (n != '..') {
+                parts.push(n);
+                return;
+            }
+
+            const l = parts.pop();
+
+            if (l == undefined) {
+                parts.push(n);
+                return;
+            }
+
+            if (l == '..' ||
+                l.startsWith('${') ||
+                l.startsWith('$(')) {
+                parts.push(l, n);
+                return;
+            }
+
+            // 'l' and '..' (l/..) are counteracted
+        });
+
+        if (parts.length == 0)
+            return '.';
+
+        return parts.join(sep || File.sep);
+    }
+
+    /**
      * convert path string to unix style
      * 
      * @param path the path must not contain any 'env variables', like: '${DIR_N}, ${VAR1}', 
@@ -35,12 +76,12 @@ export class File {
      */
     static ToUnixPath(path: string): string {
         if (this.sep == '\\') { // in win32 platform
-            return Path.normalize(path).replace(/\\{1,}/g, '/');
+            return File.normalize(path).replace(/\\{1,}/g, '/');
         } else { // in unix platform
             if (path.includes('\\')) { // it's a win32 path
-                return Path.normalize(path.replace(/\\{1,}/g, '/'));
+                return File.normalize(path.replace(/\\{1,}/g, '/'));
             } else {
-                return Path.normalize(path);
+                return File.normalize(path);
             }
         }
     }
