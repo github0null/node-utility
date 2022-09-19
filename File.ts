@@ -30,9 +30,17 @@ export class File {
     /**
      * same as 'NodePath.normalize', but we not convert '${VAR}/../A' to 'A'
     */
-    static normalize(path: string, sep?: string): string {
+    static normalize(path_: string, sep?: string): string {
 
-        const p = path.trim().split(/\\|\//)
+        let path = path_.trim();
+
+        let root: string = '';
+
+        if (Path.isAbsolute(path)) {
+            root = Path.parse(path).root;
+        }
+
+        const p = path.split(/\\|\//)
             .map(n => n.trim())
             .filter(n => n != '' && n != '.');
 
@@ -63,9 +71,9 @@ export class File {
         });
 
         if (parts.length == 0)
-            return '.';
+            return root + '.';
 
-        return parts.join(sep || File.sep);
+        return root + parts.join(sep || File.sep);
     }
 
     /**
