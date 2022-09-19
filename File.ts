@@ -71,7 +71,7 @@ export class File {
         });
 
         if (parts.length == 0)
-            return root + '.';
+            return root ? root : '.';
 
         return root + parts.join(sep || File.sep);
     }
