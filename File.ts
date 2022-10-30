@@ -284,7 +284,7 @@ export class File {
     CreateDir(recursive: boolean = false): void {
         if (!this.IsDir()) {
             if (recursive) { // create parent folder
-                let list = this.path.split(Path.sep);
+                let list = this.path.split(/(?:\\|\/)+/);
                 if (list.length > 0) {
                     let _path: string = list[0]; // set root
                     for (let i = 1; i < list.length; i++) {
