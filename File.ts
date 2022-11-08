@@ -38,6 +38,7 @@ export class File {
 
         if (Path.isAbsolute(path)) {
             root = Path.parse(path).root;
+            if (this.sep == '\\') root = root.replace(/\//, '\\');
             path = path.substr(root.length);
         }
 
