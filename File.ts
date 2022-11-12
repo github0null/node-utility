@@ -7,7 +7,7 @@ export class File {
 
     static sep = Path.sep;
     static delimiter = Path.delimiter;
-    static EMPTY_FILTER: RegExp[] = [];
+    static EXCLUDE_ALL_FILTER: RegExp[] = [];
 
     readonly name: string;          // example 'demo.cpp'
     readonly noSuffixName: string;  // example 'demo'
