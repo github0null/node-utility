@@ -197,11 +197,11 @@ export class File {
     }
 
     static IsFile(path: string): boolean {
-        return fs.existsSync(path) && fs.lstatSync(path).isFile();
+        return fs.existsSync(path) && fs.statSync(path).isFile();
     }
 
     static IsDir(path: string): boolean {
-        return fs.existsSync(path) && fs.lstatSync(path).isDirectory();
+        return fs.existsSync(path) && fs.statSync(path).isDirectory();
     }
 
     static isSubPathOf(root_: string, target_: string): boolean {
@@ -283,23 +283,23 @@ export class File {
     //----------------------------------------------------
 
     CreateDir(recursive: boolean = false): void {
-        if (!this.IsDir()) {
-            if (recursive) { // create parent folder
-                let list = this.path.split(/(?:\\|\/)+/);
-                if (list.length > 0) {
-                    let _path: string = list[0]; // set root
-                    for (let i = 1; i < list.length; i++) {
-                        _path += (Path.sep + list[i]);
-                        if (fs.existsSync(_path)
-                            && (fs.lstatSync(_path).isDirectory() || fs.lstatSync(_path).isSymbolicLink())) {
-                            continue; // skip existed folder
-                        }
-                        fs.mkdirSync(_path);
-                    }
-                    return;
+
+        if (this.IsDir())
+            return; // skip existed folder
+
+        if (recursive) { // create parent folder
+            const parts = this.path.split(/(?:\\|\/)+/);
+            if (parts.length > 0) {
+                let _path: string = parts[0]; // set root
+                for (let i = 1; i < parts.length; i++) {
+                    _path += (Path.sep + parts[i]);
+                    if (File.IsDir(_path)) continue; // skip existed folder
+                    fs.mkdirSync(_path);
                 }
-                return;
             }
+        }
+
+        else {
             fs.mkdirSync(this.path);
         }
     }
@@ -395,11 +395,11 @@ export class File {
     }
 
     IsFile(): boolean {
-        return fs.existsSync(this.path) && fs.lstatSync(this.path).isFile();
+        return fs.existsSync(this.path) && fs.statSync(this.path).isFile();
     }
 
     IsDir(): boolean {
-        return fs.existsSync(this.path) && fs.lstatSync(this.path).isDirectory();
+        return fs.existsSync(this.path) && fs.statSync(this.path).isDirectory();
     }
 
     getHash(hashName?: string): string {
