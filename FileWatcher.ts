@@ -3,6 +3,29 @@ import * as fs from 'fs';
 import * as events from "events";
 import * as os from 'os';
 
+const fw_global_evt = new events.EventEmitter();
+const fw_global_evt_time_records = new Map<string, { [evt: string]: number }>();
+
+function global_evt__emit(event: string, file: File) {
+
+    let time_records = fw_global_evt_time_records.get(file.path);
+    if (time_records && time_records[event] != undefined) {
+        if (Date.now() - time_records[event] < 500) {
+            return; // limit same event freq for a file
+        }
+    }
+
+    // post event
+    fw_global_evt.emit(event, file);
+
+    if (time_records == undefined) {
+        time_records = {};
+    }
+
+    time_records[event] = Date.now();
+    fw_global_evt_time_records.set(file.path, time_records);
+}
+
 export class FileWatcher {
 
     readonly file: File;
@@ -12,6 +35,18 @@ export class FileWatcher {
     private recursive: boolean;
     private watchSelfDir: boolean;
     private _event: events.EventEmitter;
+
+    ////////////////////
+    // global event
+
+    static on(event: 'change', listener: (file: File) => void): void;
+    static on(event: 'rename', listener: (file: File) => void): void;
+    static on(event: any, listener: (arg?: any) => void) {
+        fw_global_evt.on(event, listener);
+    }
+
+    ////////////////////
+    //
 
     OnRename?: (file: File) => void;
     OnChanged?: (file: File) => void;
@@ -38,8 +73,11 @@ export class FileWatcher {
         if (this.watchSelfDir && this.isDir && os.platform() == 'win32' &&
             this.selfWatcher === undefined) {
             this.selfWatcher = fs.watch(this.file.dir, (event, fname) => {
-                if (event === 'rename' && fname === this.file.name && this.OnRename) {
-                    this.OnRename(this.file);
+                if (event === 'rename') {
+                    if (fname === this.file.name && this.OnRename) {
+                        this.OnRename(this.file);
+                    }
+                    global_evt__emit(event, File.fromArray([this.file.dir, fname]));
                 }
             });
             this.selfWatcher.on('error', (err) => {
@@ -51,6 +89,7 @@ export class FileWatcher {
 
         if (this.watcher === undefined) {
             this.watcher = fs.watch(this.file.path, { recursive: this.recursive }, (event, filename) => {
+
                 switch (event) {
                     case 'rename':
                         if (this.OnRename) {
@@ -63,6 +102,8 @@ export class FileWatcher {
                         }
                         break;
                 }
+
+                global_evt__emit(event, this.isDir ? File.fromArray([this.file.path, filename]) : this.file);
             });
             this.watcher.on('error', (err) => {
                 const msg = `FileWatcher: '${this.file.path}' error, msg: '${(<Error>err).message}'`;
