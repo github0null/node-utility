@@ -43,7 +43,9 @@ export class FileWatcher {
                 }
             });
             this.selfWatcher.on('error', (err) => {
-                this._event.emit('error', err);
+                const msg = `SelfWatcher: '${this.file.dir}' error, msg: '${(<Error>err).message}'`;
+                this._event.emit('error', new Error(msg));
+                this.Close();
             });
         }
 
@@ -63,10 +65,17 @@ export class FileWatcher {
                 }
             });
             this.watcher.on('error', (err) => {
-                this._event.emit('error', err);
+                const msg = `FileWatcher: '${this.file.path}' error, msg: '${(<Error>err).message}'`;
+                this._event.emit('error', new Error(msg));
+                this.Close();
             });
         }
+
         return this;
+    }
+
+    IsWatched(): boolean {
+        return this.selfWatcher != undefined || this.watcher != undefined;
     }
 
     Close() {

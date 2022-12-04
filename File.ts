@@ -305,7 +305,12 @@ export class File {
     }
 
     GetList(fileFilter?: RegExp[], dirFilter?: RegExp[]): File[] {
-        let list: File[] = [];
+
+        const list: File[] = [];
+
+        if (!this.IsDir())
+            return list;
+
         fs.readdirSync(this.path).forEach((str: string) => {
             if (str !== '.' && str !== '..') {
                 const f = new File(this.path + Path.sep + str);
@@ -334,6 +339,7 @@ export class File {
                 }
             }
         });
+
         return list;
     }
 
