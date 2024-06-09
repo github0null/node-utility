@@ -23,8 +23,15 @@ export class File {
         this.dir = Path.dirname(this.path);
     }
 
+    static from(...paths: string[]): File {
+        return new File(Path.join.apply(null, paths));
+    }
+
+    /**
+     * @deprecated this function is replaced by File.from(...)
+    */
     static fromArray(pathArray: string[]): File {
-        return new File(pathArray.join(File.sep));
+        return new File(Path.join.apply(null, pathArray));
     }
 
     /**
