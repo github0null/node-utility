@@ -2,6 +2,7 @@ import * as Path from 'path';
 import * as fs from 'fs';
 import * as crypto from 'crypto';
 import * as url from 'url';
+import * as os from 'os';
 
 export class File {
 
@@ -213,10 +214,17 @@ export class File {
 
     static isSubPathOf(root_: string, target_: string): boolean {
 
-        const target = File.ToUnixPath(target_).replace(/\/$/, '');
-        const root = File.ToUnixPath(root_).replace(/\/$/, '');
+        let target = File.ToUnixPath(target_).replace(/\/$/, '');
+        let root = File.ToUnixPath(root_).replace(/\/$/, '');
 
-        if (root == target) return true;
+        // on win32, we need ignore case
+        if (os.platform() == 'win32') {
+            root = root.toLowerCase();
+            target = target.toLowerCase();
+        }
+
+        if (root == target)
+            return true;
 
         return target.startsWith(`${root}/`);
     }
