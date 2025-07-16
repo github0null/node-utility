@@ -73,6 +73,17 @@ export class FileWatcher {
         if (this.watchSelfDir && this.isDir && os.platform() == 'win32' &&
             this.selfWatcher === undefined) {
             this.selfWatcher = fs.watch(this.file.dir, (event, fname) => {
+
+                // FIXME: 
+                // 调用 fromArray 时出现了不寻常的错误：
+                //      The "path" argument must be of type string. Received undefined
+                //      暂时不清楚原因
+                if (fname === undefined || fname === null) {
+                    const msg = `FileWatcher: '${event}' with null filename. on path: ${this.file?.dir}`;
+                    this._event.emit('error', new Error(msg));
+                    return;
+                }
+
                 if (event === 'rename') {
                     if (fname === this.file.name && this.OnRename) {
                         this.OnRename(this.file);
@@ -89,6 +100,16 @@ export class FileWatcher {
 
         if (this.watcher === undefined) {
             this.watcher = fs.watch(this.file.path, { recursive: this.recursive }, (event, filename) => {
+
+                // FIXME: 
+                // 调用 fromArray 时出现了不寻常的错误：
+                //      The "path" argument must be of type string. Received undefined
+                //      暂时不清楚原因
+                if (filename === undefined || filename === null) {
+                    const msg = `FileWatcher: '${event}' with null filename. on path: ${this.file?.path}`;
+                    this._event.emit('error', new Error(msg));
+                    return;
+                }
 
                 switch (event) {
                     case 'rename':
