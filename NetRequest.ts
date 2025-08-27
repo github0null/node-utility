@@ -1,6 +1,7 @@
 import * as http from 'http';
 import * as events from 'events';
 import * as https from 'https';
+import { URL } from "url";
 
 export type HttpRequestType = 'http' | 'https';
 
@@ -265,15 +266,20 @@ export class NetRequest {
     /**
      * @note request binary data by http/https GET method
      */
-    RequestBinary<T>(option: RequestOption<T> | string, type?: HttpRequestType, report?: (incrementPercent: number) => void): Promise<NetResponse<Buffer>> {
+    RequestBinary<T>(
+        url_or_option: RequestOption<T> | URL, 
+        type?: HttpRequestType, 
+        report?: (incrementPercent: number) => void, 
+        redirect_count?: number): Promise<NetResponse<Buffer>> {
 
         return new Promise((resolve) => {
 
             let bufferList: Buffer[] = [];
             let isAbort = false;
+            let isRedirected = redirect_count && redirect_count > 0;
 
-            if (typeof option !== 'string' && option.content) {
-                option.method = 'GET';
+            if (!(url_or_option instanceof URL)) {
+                url_or_option.method = 'GET';
             }
 
             let resolved: boolean = false;
@@ -305,9 +311,45 @@ export class NetRequest {
                         report(buf.length / totalSize);
                     }
                 });
-                
+
                 res.on('end', () => {
-                    if (res.statusCode && res.statusCode < 300 && !isAbort) {
+                    if (res.statusCode == 301 || res.statusCode == 302) {
+                        const loc = res.headers.location;
+                        if (redirect_count && redirect_count > 5) {
+                            resolveIf({
+                                success: false,
+                                statusCode: 400,
+                                msg: `Bad redirect: max jumps (>5) of redirect reached. stop at ${loc}`
+                            });
+                        } else if (loc) {
+                            const nUrl = new URL(loc);
+                            let hdrs: any = { 'User-Agent': 'Mozilla/5.0' };
+                            if (!(url_or_option instanceof URL))
+                                if (url_or_option.headers)
+                                    hdrs = url_or_option.headers;
+                            isRedirected = true;
+                            this.RequestBinary({
+                                host: nUrl.host,
+                                path: nUrl.pathname,
+                                headers: hdrs
+                            }, type, report, (redirect_count || 0) + 1)
+                                .then(rsp => {
+                                    resolveIf(rsp);
+                                }).catch(err => {
+                                    resolveIf({
+                                        success: false,
+                                        statusCode: res.statusCode,
+                                        msg: `Error: ${(<Error>err).message}`
+                                    });
+                                });
+                        } else {
+                            resolveIf({
+                                success: false,
+                                statusCode: 404,
+                                msg: `Bad redirect: location is null`
+                            });
+                        }
+                    } else if (`${res.statusCode}`.startsWith('20') && !isAbort) {
                         resolveIf({
                             success: true,
                             statusCode: res.statusCode,
@@ -322,13 +364,14 @@ export class NetRequest {
                         });
                     }
                 });
-                
+
                 res.on('close', () => {
-                    resolveIf({
-                        success: false,
-                        statusCode: res.statusCode,
-                        msg: 'request closed, but data not end !'
-                    });
+                    if (!isRedirected)
+                        resolveIf({
+                            success: false,
+                            statusCode: res.statusCode,
+                            msg: 'request closed, but data not end !'
+                        });
                 });
             };
 
@@ -336,9 +379,9 @@ export class NetRequest {
 
             try {
                 if (type !== 'https') {
-                    request = http.request(option, callbk);
+                    request = http.request(url_or_option, callbk);
                 } else {
-                    request = https.request(option, callbk);
+                    request = https.request(url_or_option, callbk);
                 }
 
                 this._event.on('abort', () => {
@@ -361,8 +404,8 @@ export class NetRequest {
                     }
                 });
 
-                if (typeof option !== 'string' && option.content) {
-                    request.end(JSON.stringify(option.content));
+                if (!(url_or_option instanceof URL)) {
+                    request.end(JSON.stringify(url_or_option.content));
                 } else {
                     request.end();
                 }
