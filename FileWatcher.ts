@@ -74,10 +74,6 @@ export class FileWatcher {
             this.selfWatcher === undefined) {
             this.selfWatcher = fs.watch(this.file.dir, (event, fname) => {
 
-                // FIXME: 
-                // 调用 fromArray 时出现了不寻常的错误：
-                //      The "path" argument must be of type string. Received undefined
-                //      暂时不清楚原因
                 if (fname === undefined || fname === null) {
                     const msg = `FileWatcher: '${event}' with null filename. on path: ${this.file?.dir}`;
                     this._event.emit('error', new Error(msg));
@@ -88,7 +84,7 @@ export class FileWatcher {
                     if (fname === this.file.name && this.OnRename) {
                         this.OnRename(this.file);
                     }
-                    global_evt__emit(event, File.fromArray([this.file.dir, fname]));
+                    global_evt__emit(event, File.from(this.file.dir, fname));
                 }
             });
             this.selfWatcher.on('error', (err) => {
@@ -101,10 +97,6 @@ export class FileWatcher {
         if (this.watcher === undefined) {
             this.watcher = fs.watch(this.file.path, { recursive: this.recursive }, (event, filename) => {
 
-                // FIXME: 
-                // 调用 fromArray 时出现了不寻常的错误：
-                //      The "path" argument must be of type string. Received undefined
-                //      暂时不清楚原因
                 if (filename === undefined || filename === null) {
                     const msg = `FileWatcher: '${event}' with null filename. on path: ${this.file?.path}`;
                     this._event.emit('error', new Error(msg));
@@ -114,17 +106,17 @@ export class FileWatcher {
                 switch (event) {
                     case 'rename':
                         if (this.OnRename) {
-                            this.OnRename(this.isDir ? File.fromArray([this.file.path, filename]) : this.file);
+                            this.OnRename(this.isDir ? File.from(this.file.path, filename) : this.file);
                         }
                         break;
                     case 'change':
                         if (this.OnChanged) {
-                            this.OnChanged(this.isDir ? File.fromArray([this.file.path, filename]) : this.file);
+                            this.OnChanged(this.isDir ? File.from(this.file.path, filename) : this.file);
                         }
                         break;
                 }
 
-                global_evt__emit(event, this.isDir ? File.fromArray([this.file.path, filename]) : this.file);
+                global_evt__emit(event, this.isDir ? File.from(this.file.path, filename) : this.file);
             });
             this.watcher.on('error', (err) => {
                 const msg = `FileWatcher: '${this.file.path}' error, msg: '${(<Error>err).message}'`;
