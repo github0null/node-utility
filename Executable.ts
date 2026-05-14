@@ -184,7 +184,8 @@ export abstract class Process implements Executable {
 export class ExeFile extends Process {
 
     protected _execute(exePath: string, args?: string[] | undefined, options?: ExecutableOption | undefined): process.ChildProcess {
-        return process.execFile(exePath, args, options);
+        const opts: process.ExecFileOptionsWithBufferEncoding = { encoding: null };
+        return process.execFile(exePath, args, opts);
     }
 }
 

@@ -403,7 +403,7 @@ export class File {
 
     //-------------------------------------------------
 
-    Read(encoding?: string): string {
+    Read(encoding?: BufferEncoding): string {
         return fs.readFileSync(this.path, encoding || 'utf8');
     }
 
