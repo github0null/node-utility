@@ -60,6 +60,7 @@ export class FileWatcher {
     }
 
     on(event: 'error', listener: (err: Error) => void): this;
+    on(event: 'warning', listener: (warn: Error | string) => void): this;
     on(event: any, listener: (arg?: any) => void): this {
         this._event.on(event, listener);
         return this;
@@ -76,7 +77,7 @@ export class FileWatcher {
 
                 if (fname === undefined || fname === null) {
                     const msg = `FileWatcher: '${event}' with null filename. on path: ${this.file?.dir}`;
-                    this._event.emit('error', new Error(msg));
+                    this._event.emit('warning', msg);
                     return;
                 }
 
