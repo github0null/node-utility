@@ -100,7 +100,7 @@ export class FileWatcher {
 
                 if (filename === undefined || filename === null) {
                     const msg = `FileWatcher: '${event}' with null filename. on path: ${this.file?.path}`;
-                    this._event.emit('error', new Error(msg));
+                    this._event.emit('warning', msg);
                     return;
                 }
 
